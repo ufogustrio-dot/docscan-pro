@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocScan Pro - Advanced Document Scanner & Enhancer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jsPDF CDN for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-brand-500/10 border border-brand-500/20 rounded-xl text-brand-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-2">
+                    DocScan Pro <span class="bg-brand-500/10 text-brand-400 border border-brand-500/30 text-[10px] px-2 py-0.5 rounded-full font-medium">v2.1</span>
+                </h1>
+                <p class="text-[11px] text-slate-400">AI Document Scanner & Enhancer</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button id="reset-btn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl transition font-medium border border-slate-700/80">
+                Reset Default
+            </button>
+            <button id="compare-toggle-btn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl transition font-medium border border-slate-700 flex items-center gap-1.5 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                <span id="compare-btn-text">Bandingkan Asli</span>
+            </button>
+            <div class="relative inline-block text-left">
+                <button id="download-dropdown-btn" class="bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-brand-600/20 transition flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Unduh / Ekspor ▼
+                </button>
+                <div id="download-menu" class="hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl py-1 z-50">
+                    <button id="download-png" class="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-slate-800 hover:text-brand-400 transition">Unduh sebagai Gambar (PNG)</button>
+                    <button id="download-pdf" class="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-slate-800 hover:text-brand-400 transition">Unduh sebagai Dokumen PDF</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+        
+        <!-- Sidebar Controls (Left) -->
+        <aside class="lg:col-span-4 bg-slate-900/95 border-r border-slate-800 flex flex-col h-[calc(100vh-61px)]">
+            
+            <!-- Sidebar Navigation Tabs -->
+            <div class="flex border-b border-slate-800 p-2 gap-1 bg-slate-900/50">
+                <button data-tab="controls" class="tab-btn flex-1 py-2 text-xs font-semibold rounded-lg bg-slate-800 text-white transition shadow-sm">Penyesuaian</button>
+                <button data-tab="presets" class="tab-btn flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Preset Instan</button>
+                <button data-tab="upload-tab" class="tab-btn flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Ganti Berkas</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-5 space-y-6">
+                
+                <!-- TAB 1: CONTROLS -->
+                <div id="panel-controls" class="space-y-5">
+                    
+                    <!-- Ruang Warna -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Mode Warna / Tinta</label>
+                        <select id="color-mode" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition">
+                            <option value="color">Berwarna (Original Tint)</option>
+                            <option value="grayscale">Grayscale (Hitam Putih Abu)</option>
+                            <option value="binary">Black & White Pekat (Fotokopi)</option>
+                            <option value="blueprint">Cyanotype / Arsip Biru</option>
+                        </select>
+                    </div>
+
+                    <!-- Threshold Slider (Active for Binary mode) -->
+                    <div id="threshold-container" class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-300 font-medium">Ambang Batas (Threshold)</span>
+                            <span id="val-threshold" class="text-brand-400 font-mono">135</span>
+                        </div>
+                        <input type="range" id="input-threshold" min="50" max="220" value="135" class="w-full accent-brand-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-800/80 space-y-4">
+                        
+                        <!-- Rotation -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-300 font-medium">Putar Sudut</span>
+                                <span id="val-rotation" class="text-brand-400 font-mono">0°</span>
+                            </div>
+                            <input type="range" id="input-rotation" min="-15" max="15" step="0.5" value="0" class="w-full accent-brand-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                        </div>
+
+                        <!-- Brightness -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-300 font-medium">Kecerahan</span>
+                                <span id="val-brightness" class="text-brand-400 font-mono">100%</span>
+                            </div>
+                            <input type="range" id="input-brightness" min="50" max="150" value="100" class="w-full accent-brand-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                        </div>
+
+                        <!-- Contrast -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-300 font-medium">Kontras</span>
+                                <span id="val-contrast" class="text-brand-400 font-mono">120%</span>
+                            </div>
+                            <input type="range" id="input-contrast" min="50" max="250" value="120" class="w-full accent-brand-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                        </div>
+
+                        <!-- Blur -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-300 font-medium">Buram / Penghalus Teks</span>
+                                <span id="val-blur" class="text-brand-400 font-mono">0 px</span>
+                            </div>
+                            <input type="range" id="input-blur" min="0" max="4" step="0.1" value="0" class="w-full accent-brand-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                        </div>
+
+                        <!-- Noise -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-300 font-medium">Bintik Noise (Efek Mesin Cetak)</span>
+                                <span id="val-noise" class="text-brand-400 font-mono">15%</span>
+                            </div>
+                            <input type="range" id="input-noise" min="0" max="50" value="15" class="w-full accent-brand-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                        </div>
+
+                        <!-- Yellowing -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-300 font-medium">Kekuningan Kertas Tua</span>
+                                <span id="val-yellowing" class="text-brand-400 font-mono">10%</span>
+                            </div>
+                            <input type="range" id="input-yellowing" min="0" max="100" value="10" class="w-full accent-brand-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- TAB 2: PRESETS -->
+                <div id="panel-presets" class="space-y-3 hidden">
+                    <p class="text-xs text-slate-400 mb-2">Pilih gaya pindaian instan yang siap pakai:</p>
+                    
+                    <button data-preset="photocopy" class="preset-btn w-full text-left p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-brand-500 transition group">
+                        <div class="font-semibold text-xs text-white group-hover:text-brand-400">📄 Fotokopi Klasik</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">Kontras tinggi, bintik mesin cetak tebal, warna monokrom.</div>
+                    </button>
+
+                    <button data-preset="official" class="preset-btn w-full text-left p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-brand-500 transition group">
+                        <div class="font-semibold text-xs text-white group-hover:text-brand-400">🏛️ Dokumen Resmi / Tanda Tangan</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">Latar bersih, teks sangat tajam, mempertahankan warna tanda tangan stempel.</div>
+                    </button>
+
+                    <button data-preset="clean" class="preset-btn w-full text-left p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-brand-500 transition group">
+                        <div class="font-semibold text-xs text-white group-hover:text-brand-400">✨ Pindai Bersih (Clean Scan)</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">Tanpa noise, pencahayaan merata putih bersih seperti scanner modern.</div>
+                    </button>
+
+                    <button data-preset="vintage" class="preset-btn w-full text-left p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-brand-500 transition group">
+                        <div class="font-semibold text-xs text-white group-hover:text-brand-400">📜 Arsip Kuno / Sepia</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">Efek kertas tua kekuningan arsip sejarah antik.</div>
+                    </button>
+                </div>
+
+                <!-- TAB 3: UPLOAD -->
+                <div id="panel-upload-tab" class="space-y-3 hidden">
+                    <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-brand-500 rounded-2xl p-6 text-center cursor-pointer transition bg-slate-950/50 group">
+                        <input type="file" id="file-input" accept="image/*" class="hidden">
+                        <div class="flex flex-col items-center justify-center space-y-2">
+                            <div class="p-3.5 bg-slate-800 group-hover:bg-brand-500/20 rounded-full text-slate-400 group-hover:text-brand-400 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                            </div>
+                            <p class="text-xs font-medium text-slate-200">Klik untuk unggah atau seret file baru</p>
+                            <p class="text-[11px] text-slate-500">Mendukung PNG, JPG, WEBP</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- Preview Area (Right) -->
+        <section class="lg:col-span-8 bg-slate-950 flex flex-col items-center justify-center p-4 lg:p-6 relative overflow-hidden">
+            
+            <!-- Status Badge & Zoom Tools -->
+            <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-10 pointer-events-none">
+                <div class="bg-slate-900/90 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-full text-[11px] text-slate-300 flex items-center gap-2 shadow-lg pointer-events-auto">
+                    <span class="h-2 w-2 rounded-full bg-brand-500 animate-pulse"></span>
+                    <span id="status-badge-text">Pratinjau Langsung (Canvas Real-time)</span>
+                </div>
+                <!-- Zoom Controls -->
+                <div class="bg-slate-900/90 backdrop-blur border border-slate-800 p-1 rounded-xl flex items-center gap-1 shadow-lg pointer-events-auto">
+                    <button id="zoom-out" class="p-1.5 hover:bg-slate-800 text-slate-300 rounded-lg transition" title="Perkecil">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+                    </button>
+                    <span id="zoom-level" class="text-xs font-mono text-brand-400 px-2">100%</span>
+                    <button id="zoom-in" class="p-1.5 hover:bg-slate-800 text-slate-300 rounded-lg transition" title="Perbesar">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="w-full h-full flex items-center justify-center overflow-auto p-2 pt-14">
+                <div id="canvas-wrapper" class="relative max-w-full max-h-full bg-slate-900 shadow-2xl rounded-xl border border-slate-800/80 p-2 flex items-center justify-center transition-all">
+                    <canvas id="scanner-canvas" class="object-contain rounded-lg shadow-md transition-transform duration-150"></canvas>
+                </div>
+            </div>
+
+            <div class="mt-3 text-[11px] text-slate-500 text-center flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Pemrosesan 100% aman di dalam browser (Client-Side Privacy)
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Custom Notification Modal -->
+    <div id="msg-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <h3 id="msg-title" class="text-sm font-bold text-white">Notifikasi</h3>
+            <p id="msg-text" class="text-xs text-slate-300 leading-relaxed"></p>
+            <button id="msg-close" class="w-full bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition">Mengerti</button>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // DOM Elements
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const canvas = document.getElementById('scanner-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const resetBtn = document.getElementById('reset-btn');
+        const downloadDropdownBtn = document.getElementById('download-dropdown-btn');
+        const downloadMenu = document.getElementById('download-menu');
+        const downloadPng = document.getElementById('download-png');
+        const downloadPdf = document.getElementById('download-pdf');
+        const compareToggleBtn = document.getElementById('compare-toggle-btn');
+        const compareBtnText = document.getElementById('compare-btn-text');
+        const statusBadgeText = document.getElementById('status-badge-text');
+
+        // Zoom Elements
+        const zoomInBtn = document.getElementById('zoom-in');
+        const zoomOutBtn = document.getElementById('zoom-out');
+        const zoomLevelText = document.getElementById('zoom-level');
+        let currentZoom = 1.0;
+
+        // Controls
+        const colorModeSelect = document.getElementById('color-mode');
+        const rotInput = document.getElementById('input-rotation');
+        const brightInput = document.getElementById('input-brightness');
+        const contrastInput = document.getElementById('input-contrast');
+        const blurInput = document.getElementById('input-blur');
+        const noiseInput = document.getElementById('input-noise');
+        const yellowInput = document.getElementById('input-yellowing');
+        const thresholdInput = document.getElementById('input-threshold');
+        const thresholdContainer = document.getElementById('threshold-container');
+
+        // Value Labels
+        const valRotation = document.getElementById('val-rotation');
+        const valBrightness = document.getElementById('val-brightness');
+        const valContrast = document.getElementById('val-contrast');
+        const valBlur = document.getElementById('val-blur');
+        const valNoise = document.getElementById('val-noise');
+        const valYellowing = document.getElementById('val-yellowing');
+        const valThreshold = document.getElementById('val-threshold');
+
+        // Tabs
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const panels = {
+            controls: document.getElementById('panel-controls'),
+            presets: document.getElementById('panel-presets'),
+            'upload-tab': document.getElementById('panel-upload-tab')
+        };
+
+        // Modal
+        const msgModal = document.getElementById('msg-modal');
+        const msgTitle = document.getElementById('msg-title');
+        const msgText = document.getElementById('msg-text');
+        const msgClose = document.getElementById('msg-close');
+
+        let originalImage = new Image();
+        let isImageLoaded = false;
+        let isShowingOriginal = false;
+
+        function showMessage(title, text) {
+            msgTitle.textContent = title;
+            msgText.textContent = text;
+            msgModal.classList.remove('hidden');
+            msgModal.classList.add('flex');
+        }
+
+        msgClose.addEventListener('click', () => {
+            msgModal.classList.remove('flex');
+            msgModal.classList.add('hidden');
+        });
+
+        // Dropdown Toggle
+        downloadDropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            downloadMenu.classList.toggle('hidden');
+        });
+        window.addEventListener('click', () => {
+            downloadMenu.classList.add('hidden');
+        });
+
+        // Tab Switching Logic
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => {
+                    b.classList.remove('bg-slate-800', 'text-white', 'shadow-sm');
+                    b.classList.add('text-slate-400');
+                });
+                btn.classList.add('bg-slate-800', 'text-white', 'shadow-sm');
+                btn.classList.remove('text-slate-400');
+
+                const target = btn.getAttribute('data-tab');
+                Object.keys(panels).forEach(key => {
+                    if (key === target) {
+                        panels[key].classList.remove('hidden');
+                    } else {
+                        panels[key].classList.add('hidden');
+                    }
+                });
+            });
+        });
+
+        // Zoom Handlers
+        zoomInBtn.addEventListener('click', () => {
+            if (currentZoom < 2.5) {
+                currentZoom += 0.2;
+                updateZoom();
+            }
+        });
+        zoomOutBtn.addEventListener('click', () => {
+            if (currentZoom > 0.4) {
+                currentZoom -= 0.2;
+                updateZoom();
+            }
+        });
+        function updateZoom() {
+            canvas.style.transform = `scale(${currentZoom})`;
+            zoomLevelText.textContent = `${Math.round(currentZoom * 100)}%`;
+        }
+
+        // Load Default Sample Document on Startup
+        function loadDefaultImage() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 800;
+            tempCanvas.height = 1130;
+            const tCtx = tempCanvas.getContext('2d');
+            
+            tCtx.fillStyle = '#f8fafc';
+            tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            tCtx.fillStyle = '#1e293b';
+            tCtx.fillRect(60, 60, tempCanvas.width - 120, 90);
+            tCtx.fillStyle = '#ffffff';
+            tCtx.font = 'bold 30px Inter, sans-serif';
+            tCtx.textAlign = 'center';
+            tCtx.fillText('SURAT KETERANGAN RESMI', tempCanvas.width / 2, 115);
+
+            tCtx.fillStyle = '#334155';
+            tCtx.font = '16px Inter, sans-serif';
+            tCtx.textAlign = 'left';
+            
+            let startY = 220;
+            for (let i = 0; i < 14; i++) {
+                let w = (i % 4 === 0) ? 460 : 660;
+                tCtx.fillRect(70, startY, w, 12);
+                startY += 45;
+            }
+
+            tCtx.fillStyle = '#64748b';
+            tCtx.fillRect(500, 920, 230, 2);
+            tCtx.font = '14px Inter, sans-serif';
+            tCtx.fillText('Direktur Utama', 560, 950);
+
+            originalImage.src = tempCanvas.toDataURL('image/png');
+            originalImage.onload = () => {
+                isImageLoaded = true;
+                processAndDrawImage();
+            };
+        }
+
+        // File Handler
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-brand-500', 'bg-brand-500/10'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-brand-500', 'bg-brand-500/10'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-brand-500', 'bg-brand-500/10');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                originalImage.src = event.target.result;
+                originalImage.onload = () => {
+                    isImageLoaded = true;
+                    currentZoom = 1.0;
+                    updateZoom();
+                    processAndDrawImage();
+                    tabBtns[0].click();
+                    showMessage('Berhasil Unggah', 'Dokumen berhasil dimuat ke editor.');
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Core Image Processing Pipeline
+        function processAndDrawImage() {
+            if (!isImageLoaded) return;
+
+            // Toggle threshold visibility
+            if (colorModeSelect.value === 'binary') {
+                thresholdContainer.classList.remove('hidden');
+            } else {
+                thresholdContainer.classList.add('hidden');
+            }
+
+            // Update Labels
+            valRotation.textContent = `${rotInput.value}°`;
+            valBrightness.textContent = `${brightInput.value}%`;
+            valContrast.textContent = `${contrastInput.value}%`;
+            valBlur.textContent = `${blurInput.value} px`;
+            valNoise.textContent = `${noiseInput.value}%`;
+            valYellowing.textContent = `${yellowInput.value}%`;
+            valThreshold.textContent = thresholdInput.value;
+
+            const rotVal = parseFloat(rotInput.value);
+            const brightVal = parseFloat(brightInput.value);
+            const contrastVal = parseFloat(contrastInput.value);
+            const blurVal = parseFloat(blurInput.value);
+            const noiseVal = parseInt(noiseInput.value);
+            const yellowVal = parseFloat(yellowInput.value) / 100;
+            const thresholdVal = parseInt(thresholdInput.value);
+            const colorMode = colorModeSelect.value;
+
+            const rad = (rotVal * Math.PI) / 180;
+            const sin = Math.abs(Math.sin(rad));
+            const cos = Math.abs(Math.cos(rad));
+            const w = originalImage.width;
+            const h = originalImage.height;
+
+            canvas.width = w * cos + h * sin;
+            canvas.height = w * sin + h * cos;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+
+            if (isShowingOriginal) {
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.rotate(rad);
+                ctx.drawImage(originalImage, -w / 2, -h / 2);
+                ctx.restore();
+                return;
+            }
+
+            ctx.filter = `blur(${blurVal}px)`;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(rad);
+            ctx.drawImage(originalImage, -w / 2, -h / 2);
+            ctx.restore();
+            ctx.filter = 'none';
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            const factor = (259 * (contrastVal + 255)) / (255 * (259 - contrastVal));
+
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i], g = data[i+1], b = data[i+2];
+
+                if (colorMode === 'grayscale') {
+                    let avg = 0.299 * r + 0.587 * g + 0.114 * b;
+                    r = g = b = avg;
+                } else if (colorMode === 'binary') {
+                    let avg = 0.299 * r + 0.587 * g + 0.114 * b;
+                    r = g = b = avg < thresholdVal ? 15 : 255;
+                } else if (colorMode === 'blueprint') {
+                    let avg = 0.299 * r + 0.587 * g + 0.114 * b;
+                    r = avg * 0.1;
+                    g = avg * 0.3;
+                    b = avg * 0.8 + 50;
+                }
+
+                r = factor * (r - 128) + 128;
+                g = factor * (g - 128) + 128;
+                b = factor * (b - 128) + 128;
+
+                r += (brightVal - 100) * 1.5;
+                g += (brightVal - 100) * 1.5;
+                b += (brightVal - 100) * 1.5;
+
+                if (yellowVal > 0) {
+                    let intensity = (r + g + b) / 3;
+                    if (intensity > 190) {
+                        r += yellowVal * 18;
+                        g += yellowVal * 12;
+                        b -= yellowVal * 12;
+                    }
+                }
+
+                if (noiseVal > 0 && Math.random() < (noiseVal / 180)) {
+                    let noise = (Math.random() - 0.5) * noiseVal * 4.5;
+                    r += noise; g += noise; b += noise;
+                }
+
+                data[i]   = Math.min(255, Math.max(0, r));
+                data[i+1] = Math.min(255, Math.max(0, g));
+                data[i+2] = Math.min(255, Math.max(0, b));
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        // Preset Apply Handlers
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = btn.getAttribute('data-preset');
+                if (preset === 'photocopy') {
+                    colorModeSelect.value = 'binary';
+                    thresholdInput.value = 140;
+                    brightInput.value = 100;
+                    contrastInput.value = 180;
+                    blurInput.value = 0.5;
+                    noiseInput.value = 30;
+                    yellowInput.value = 0;
+                } else if (preset === 'official') {
+                    colorModeSelect.value = 'color';
+                    brightInput.value = 110;
+                    contrastInput.value = 140;
+                    blurInput.value = 0;
+                    noiseInput.value = 5;
+                    yellowInput.value = 5;
+                } else if (preset === 'clean') {
+                    colorModeSelect.value = 'grayscale';
+                    brightInput.value = 105;
+                    contrastInput.value = 130;
+                    blurInput.value = 0;
+                    noiseInput.value = 0;
+                    yellowInput.value = 0;
+                } else if (preset === 'vintage') {
+                    colorModeSelect.value = 'color';
+                    brightInput.value = 95;
+                    contrastInput.value = 125;
+                    blurInput.value = 0.3;
+                    noiseInput.value = 20;
+                    yellowInput.value = 75;
+                }
+                rotInput.value = 0;
+                processAndDrawImage();
+                tabBtns[0].click();
+                showMessage('Preset Diterapkan', 'Pengaturan filter instan berhasil dipasang.');
+            });
+        });
+
+        // Compare Toggle Button
+        compareToggleBtn.addEventListener('mousedown', () => {
+            isShowingOriginal = true;
+            processAndDrawImage();
+            compareBtnText.textContent = 'Lepas untuk Kembali';
+            statusBadgeText.textContent = 'Pratinjau Gambar Asli (Original)';
+        });
+        compareToggleBtn.addEventListener('mouseup', () => {
+            isShowingOriginal = false;
+            processAndDrawImage();
+            compareBtnText.textContent = 'Bandingkan Asli';
+            statusBadgeText.textContent = 'Pratinjau Langsung (Canvas Real-time)';
+        });
+        compareToggleBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isShowingOriginal = true;
+            processAndDrawImage();
+            compareBtnText.textContent = 'Lepas untuk Kembali';
+            statusBadgeText.textContent = 'Pratinjau Gambar Asli (Original)';
+        });
+        compareToggleBtn.addEventListener('touchend', () => {
+            isShowingOriginal = false;
+            processAndDrawImage();
+            compareBtnText.textContent = 'Bandingkan Asli';
+            statusBadgeText.textContent = 'Pratinjau Langsung (Canvas Real-time)';
+        });
+
+        // Listeners for inputs
+        [rotInput, brightInput, contrastInput, blurInput, noiseInput, yellowInput, thresholdInput, colorModeSelect].forEach(el => {
+            el.addEventListener('input', processAndDrawImage);
+        });
+
+        // Reset
+        resetBtn.addEventListener('click', () => {
+            rotInput.value = 0;
+            brightInput.value = 100;
+            contrastInput.value = 120;
+            blurInput.value = 0;
+            noiseInput.value = 15;
+            yellowInput.value = 10;
+            thresholdInput.value = 135;
+            colorModeSelect.value = 'color';
+            currentZoom = 1.0;
+            updateZoom();
+            processAndDrawImage();
+            showMessage('Reset Berhasil', 'Semua pengaturan dikembalikan ke default.');
+        });
+
+        // Download PNG
+        downloadPng.addEventListener('click', () => {
+            if (!isImageLoaded) return;
+            const link = document.createElement('a');
+            link.download = 'docscan-pro-result.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showMessage('Unduhan Berhasil', 'Gambar pindaian berhasil disimpan.');
+        });
+
+        // Download PDF
+        downloadPdf.addEventListener('click', () => {
+            if (!isImageLoaded) return;
+            const { jsPDF } = window.jspdf;
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            
+            // A4 dimensions in mm
+            const pdf = new jsPDF({
+                orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            
+            const ratio = canvas.width / canvas.height;
+            let imgWidth = pageWidth;
+            let imgHeight = pageWidth / ratio;
+
+            if (imgHeight > pageHeight) {
+                imgHeight = pageHeight;
+                imgWidth = pageHeight * ratio;
+            }
+
+            const x = (pageWidth - imgWidth) / 2;
+            const y = (pageHeight - imgHeight) / 2;
+
+            pdf.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight);
+            pdf.save('docscan-pro-document.pdf');
+            showMessage('PDF Diexport', 'Dokumen PDF berhasil diunduh.');
+        });
+
+        // Init
+        window.onload = () => {
+            loadDefaultImage();
+        };
+    </script>
+</body>
+</html>
